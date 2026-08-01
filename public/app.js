@@ -195,21 +195,26 @@ els.challengeBtn.addEventListener("click", async () => {
 
   const ch = TrustLayer.pickChallenge();
   els.challengeBtn.disabled = true;
-
-  // Baseline motion, then issue challenge, then check for a response spike.
-  const det = new TrustLayer.MotionDetector(els.video, els.work);
   els.challengeBanner.hidden = false;
-  els.challengeBanner.textContent = "Get ready…";
-  await wait(800);
 
-  els.challengeBanner.textContent = ch.text;
-  const res = await det.run(3500);
-  els.challengeBanner.textContent = res.alive ? "✓ Response detected" : "✗ No response";
-  await wait(1200);
+  const det = new TrustLayer.MotionDetector(els.video, els.work);
+  const res = await det.challenge({
+    onBaseline: () => { els.challengeBanner.textContent = "Hold still…"; },
+    onPrompt: () => { els.challengeBanner.textContent = ch.text; }
+  });
+
+  els.challengeBanner.textContent = res.passed
+    ? "✓ Live response confirmed"
+    : "✗ No clear response — move more deliberately";
+  await wait(1400);
   els.challengeBanner.hidden = true;
 
-  state.challengePassed = res.alive;
-  setSignal("challenge", res.alive ? "ok" : "bad", res.alive ? "passed" : "failed");
+  state.challengePassed = res.passed;
+  setSignal(
+    "challenge",
+    res.passed ? "ok" : "bad",
+    res.passed ? `passed (${res.ratio}× baseline)` : `too weak (${res.ratio}× baseline)`
+  );
   els.challengeBtn.disabled = false;
 
   await submitVerdict();

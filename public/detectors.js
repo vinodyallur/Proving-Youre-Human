@@ -202,8 +202,15 @@ class MotionDetector {
     this.ctx = canvas.getContext("2d", { willReadFrequently: true });
     this.prev = null;
   }
-  async run(ms = 3000) {
-    const diffs = [];
+
+  /**
+   * Measures motion over `ms` and returns a NORMALIZED score:
+   * mean absolute luminance change per sampled pixel (0–255 scale).
+   * Resting/still ≈ 0–4, small twitch ≈ 5–9, deliberate head turn ≈ 15+.
+   */
+  async measure(ms = 2000) {
+    const series = [];
+    this.prev = null; // fresh baseline each measurement
     const start = performance.now();
     await new Promise((resolve) => {
       const tick = () => {
@@ -213,9 +220,15 @@ class MotionDetector {
           ctx.drawImage(video, 0, 0, 160, 120);
           const cur = ctx.getImageData(0, 0, 160, 120).data;
           if (this.prev) {
-            let d = 0;
-            for (let i = 0; i < cur.length; i += 16) d += Math.abs(cur[i] - this.prev[i]);
-            diffs.push(d);
+            let d = 0, n = 0;
+            // Sample luminance (R+G+B) every 4th pixel.
+            for (let i = 0; i < cur.length; i += 16) {
+              const lc = cur[i] + cur[i + 1] + cur[i + 2];
+              const lp = this.prev[i] + this.prev[i + 1] + this.prev[i + 2];
+              d += Math.abs(lc - lp) / 3; // back to 0–255 range
+              n++;
+            }
+            series.push(d / n); // per-pixel average change
           }
           this.prev = cur;
         }
@@ -224,11 +237,46 @@ class MotionDetector {
       };
       tick();
     });
-    const avg = diffs.reduce((a, b) => a + b, 0) / (diffs.length || 1);
-    const variation = Math.max(...diffs, 0) - Math.min(...diffs, 0);
-    // Natural: some motion but not frozen, and it fluctuates.
-    const alive = avg > 200 && variation > 100;
-    return { alive, avg: Math.round(avg) };
+    if (!series.length) return { avg: 0, peak: 0, series };
+    const avg = series.reduce((a, b) => a + b, 0) / series.length;
+    const peak = Math.max(...series);
+    return { avg, peak, series };
+  }
+
+  // Back-compat: coarse "is this feed alive at all" check for the full scan.
+  async run(ms = 3000) {
+    const { avg, peak } = await this.measure(ms);
+    const alive = avg > 1.2 && peak > 4; // some real, fluctuating motion
+    return { alive, avg: Math.round(avg * 100) / 100, peak: Math.round(peak * 100) / 100 };
+  }
+
+  /**
+   * Baseline-vs-response liveness challenge.
+   * 1) Record a resting baseline while the user holds still.
+   * 2) Issue the prompt and record the response window.
+   * PASS only if the response clearly exceeds the baseline AND crosses an
+   *    absolute floor — so a tiny twitch or sensor noise does NOT pass.
+   */
+  async challenge({ onBaseline, onPrompt } = {}, baselineMs = 1600, respondMs = 3500) {
+    if (onBaseline) onBaseline();
+    const base = await this.measure(baselineMs);
+
+    if (onPrompt) onPrompt();
+    const resp = await this.measure(respondMs);
+
+    // Require the peak response to be well above resting motion.
+    const ABS_FLOOR = 8;          // deliberate movement, not a twitch
+    const RATIO = 3;              // response peak must be ≥ 3× baseline avg
+    const baseline = Math.max(base.avg, 0.5); // avoid divide-by-zero
+    const ratio = resp.peak / baseline;
+
+    const passed = resp.peak >= ABS_FLOOR && ratio >= RATIO;
+    return {
+      passed,
+      baselineAvg: Math.round(base.avg * 100) / 100,
+      responsePeak: Math.round(resp.peak * 100) / 100,
+      ratio: Math.round(ratio * 10) / 10
+    };
   }
 }
 
