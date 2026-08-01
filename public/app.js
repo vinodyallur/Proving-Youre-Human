@@ -13,8 +13,11 @@ const els = {
   scoreNum: document.getElementById("scoreNum"),
   scoreVerdict: document.getElementById("scoreVerdict"),
   reasons: document.getElementById("reasons"),
-  apiRaw: document.getElementById("apiRaw")
+  apiRaw: document.getElementById("apiRaw"),
+  simDeepfake: document.getElementById("simDeepfake")
 };
+
+const isSim = () => els.simDeepfake && els.simDeepfake.checked;
 
 let stream = null;
 const state = {}; // accumulated signals sent to the API
@@ -92,6 +95,17 @@ els.scanBtn.addEventListener("click", async () => {
   els.scanBtn.textContent = "Scanning…";
   els.roi.classList.add("active");
 
+  // Deepfake simulation: force the synthetic-source signals so you can test
+  // the non-human verdict without installing a virtual-camera tool.
+  if (isSim()) {
+    await runSimulatedScan();
+    els.roi.classList.remove("active");
+    els.scanBtn.disabled = false;
+    els.scanBtn.textContent = "Run full scan";
+    await submitVerdict();
+    return;
+  }
+
   // Re-check devices.
   const dev = await TrustLayer.inspectDevices(stream);
   applyDeviceResult(dev);
@@ -137,9 +151,48 @@ els.scanBtn.addEventListener("click", async () => {
   await submitVerdict();
 });
 
+// Forced "synthetic feed" signals for the simulation toggle.
+async function runSimulatedScan() {
+  setSignal("camera", "warn", "checking…");
+  await wait(600);
+  setSignal("camera", "bad", "Virtual: obs virtual camera");
+  setSignal("mic", "bad", "Virtual: vb-audio cable");
+  state.virtualCameraDetected = true;
+  state.virtualMicDetected = true;
+  state.noHardwareCamera = false;
+
+  setSignal("pulse", "warn", "measuring…");
+  setSignal("motion", "warn", "measuring…");
+  setSignal("audio", "warn", "listening…");
+  await wait(1200);
+
+  setSignal("pulse", "bad", "no pulse signal");
+  setSignal("motion", "bad", "static / looped");
+  setSignal("audio", "bad", "unnaturally clean");
+  state.pulseDetected = false;
+  state.bpm = null;
+  state.audioNaturalNoiseFloor = false;
+  state.challengePassed = false;
+  setSignal("challenge", "bad", "no live response");
+}
+
 // ---- Live challenge ----
 els.challengeBtn.addEventListener("click", async () => {
   if (!stream) return;
+
+  if (isSim()) {
+    els.challengeBanner.hidden = false;
+    els.challengeBanner.textContent = TrustLayer.pickChallenge().text;
+    await wait(1500);
+    els.challengeBanner.textContent = "✗ No response (synthetic feed)";
+    await wait(1200);
+    els.challengeBanner.hidden = true;
+    state.challengePassed = false;
+    setSignal("challenge", "bad", "failed");
+    await submitVerdict();
+    return;
+  }
+
   const ch = TrustLayer.pickChallenge();
   els.challengeBtn.disabled = true;
 
