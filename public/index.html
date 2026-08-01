@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TrustLayer — Real Human or Deepfake?</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">◈</span>
+      <div>
+        <h1>TrustLayer</h1>
+        <p class="tag">Is there a real, live human behind this camera?</p>
+      </div>
+    </div>
+    <div class="verdict-chip" id="verdictChip" data-state="idle">Not checked</div>
+  </header>
+
+  <main class="grid">
+    <!-- Left: live capture -->
+    <section class="card video-card">
+      <div class="video-wrap">
+        <video id="video" autoplay playsinline muted></video>
+        <canvas id="work" width="320" height="240" hidden></canvas>
+        <div class="roi" id="roi"></div>
+        <div class="challenge-banner" id="challengeBanner" hidden></div>
+      </div>
+      <div class="controls">
+        <button id="startBtn" class="btn primary">Start camera &amp; mic</button>
+        <button id="scanBtn" class="btn" disabled>Run full scan</button>
+        <button id="challengeBtn" class="btn" disabled>Live challenge</button>
+      </div>
+    </section>
+
+    <!-- Right: signals -->
+    <section class="card signals-card">
+      <h2>Capture-source authenticity</h2>
+      <ul class="signal-list" id="deviceSignals">
+        <li class="signal" data-key="camera"><span class="dot"></span><span class="label">Camera source</span><span class="val">—</span></li>
+        <li class="signal" data-key="mic"><span class="dot"></span><span class="label">Microphone source</span><span class="val">—</span></li>
+      </ul>
+
+      <h2>Liveness signals</h2>
+      <ul class="signal-list" id="liveSignals">
+        <li class="signal" data-key="pulse"><span class="dot"></span><span class="label">Pulse (rPPG)</span><span class="val">—</span></li>
+        <li class="signal" data-key="motion"><span class="dot"></span><span class="label">Micro-motion / blink</span><span class="val">—</span></li>
+        <li class="signal" data-key="audio"><span class="dot"></span><span class="label">Audio noise floor</span><span class="val">—</span></li>
+        <li class="signal" data-key="challenge"><span class="dot"></span><span class="label">Challenge-response</span><span class="val">—</span></li>
+      </ul>
+
+      <div class="score-wrap">
+        <div class="score-ring" id="scoreRing"><span id="scoreNum">—</span></div>
+        <div class="score-meta">
+          <div class="score-verdict" id="scoreVerdict">Awaiting scan</div>
+          <div class="score-sub" id="scoreSub">Signals gathered locally. Raw video/audio never leave this device.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Bottom: reasons / API response -->
+    <section class="card log-card">
+      <h2>Verdict &amp; reasons <span class="muted">(what an app would receive from the API)</span></h2>
+      <ul class="reasons" id="reasons"><li class="muted">Run a scan to see results.</li></ul>
+      <details class="api-details">
+        <summary>Raw API response</summary>
+        <pre id="apiRaw">—</pre>
+      </details>
+    </section>
+  </main>
+
+  <footer class="footnote">
+    Demo detects the common deepfake attack path: a synthetic feed piped through a virtual camera/mic.
+    Browser sandbox limits deep driver inspection — a native agent goes further. This is defense-in-depth, not a single silver bullet.
+  </footer>
+
+  <script src="detectors.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

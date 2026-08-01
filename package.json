@@ -1,0 +1,14 @@
+{
+  "name": "trustlayer-verify",
+  "version": "0.1.0",
+  "private": true,
+  "description": "TrustLayer - detect whether a video/audio stream comes from real capture hardware or a virtual (deepfake-injected) source.",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
