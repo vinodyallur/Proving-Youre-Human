@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TrustLayer — Verify the person on your call</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">◈</span>
+      <div>
+        <h1>TrustLayer <span class="muted">/ Call verify</span></h1>
+        <p class="tag">Verify the person on the other end of a Teams / Zoom / Meet call</p>
+      </div>
+    </div>
+    <div class="verdict-chip" id="verdictChip" data-state="idle">Not checked</div>
+  </header>
+
+  <main class="grid">
+    <section class="card video-card">
+      <div class="video-wrap" id="videoWrap">
+        <video id="video" autoplay playsinline muted></video>
+        <canvas id="work" width="320" height="240" hidden></canvas>
+        <div class="sel-box" id="selBox" hidden></div>
+        <div class="challenge-banner" id="challengeBanner" hidden></div>
+        <div class="hint" id="hint">Click “Share call window” → pick your Teams/Zoom window.</div>
+      </div>
+      <div class="controls">
+        <button id="shareBtn" class="btn primary">Share call window</button>
+        <button id="verifyBtn" class="btn" disabled>Verify this person</button>
+        <button id="askBtn" class="btn" disabled>Ask live challenge</button>
+      </div>
+      <p class="muted step">After sharing, <b>drag a box over the other person's face</b>, then click Verify.</p>
+    </section>
+
+    <section class="card signals-card">
+      <h2>Remote liveness signals</h2>
+      <ul class="signal-list" id="liveSignals">
+        <li class="signal" data-key="pulse"><span class="dot"></span><span class="label">Pulse (rPPG)</span><span class="val">—</span></li>
+        <li class="signal" data-key="motion"><span class="dot"></span><span class="label">Natural micro-motion</span><span class="val">—</span></li>
+        <li class="signal" data-key="challenge"><span class="dot"></span><span class="label">Live challenge-response</span><span class="val">—</span></li>
+      </ul>
+
+      <div class="score-wrap">
+        <div class="score-ring" id="scoreRing"><span id="scoreNum">—</span></div>
+        <div class="score-meta">
+          <div class="score-verdict" id="scoreVerdict">Awaiting verification</div>
+          <div class="score-sub" id="scoreSub">Analyzes only the pixels of their video tile. Nothing is recorded or uploaded.</div>
+        </div>
+      </div>
+
+      <div class="note-box">
+        <b>How to run a challenge:</b> click “Ask live challenge”, read the prompt aloud
+        (e.g. “please turn your head left”), and TrustLayer checks if their tile responds
+        in real time. Real people react; pre-rendered deepfakes don't.
+      </div>
+    </section>
+
+    <section class="card log-card">
+      <h2>Verdict &amp; reasons</h2>
+      <ul class="reasons" id="reasons"><li class="muted">Share a window and verify to see results.</li></ul>
+      <details class="api-details">
+        <summary>Raw API response</summary>
+        <pre id="apiRaw">—</pre>
+      </details>
+    </section>
+  </main>
+
+  <footer class="footnote">
+    From your side of a call we can't inspect the other person's camera drivers (that's on their machine),
+    so this focuses on <b>visual liveness + live challenge-response</b> on their video tile — the signals that
+    catch real-time deepfakes. Full mutual verification requires both sides to run TrustLayer.
+    <br /><a href="/" class="muted">← Back to self-check demo</a>
+  </footer>
+
+  <script src="detectors.js"></script>
+  <script src="screen.js"></script>
+</body>
+</html>

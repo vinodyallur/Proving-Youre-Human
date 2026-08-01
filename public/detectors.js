@@ -59,25 +59,26 @@ async function inspectDevices(stream) {
  * A live face has a subtle but real periodic signal; many synthetic feeds don't.
  */
 class PulseEstimator {
-  constructor(video, canvas) {
+  constructor(video, canvas, roi) {
     this.video = video;
     this.canvas = canvas;
     this.ctx = canvas.getContext("2d", { willReadFrequently: true });
     this.samples = [];
     this.times = [];
     this.running = false;
+    // Normalized region-of-interest (fraction of frame) over the face.
+    this.roi = roi || { x: 0.35, y: 0.22, w: 0.30, h: 0.34 };
   }
 
   _sampleFrame() {
-    const { video, canvas, ctx } = this;
+    const { video, canvas, ctx, roi } = this;
     if (!video.videoWidth) return;
     canvas.width = 320; canvas.height = 240;
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    // ROI ~ center-face box matching the on-screen guide.
-    const x = Math.floor(canvas.width * 0.35);
-    const y = Math.floor(canvas.height * 0.22);
-    const w = Math.floor(canvas.width * 0.30);
-    const h = Math.floor(canvas.height * 0.34);
+    const x = Math.floor(canvas.width * roi.x);
+    const y = Math.floor(canvas.height * roi.y);
+    const w = Math.max(1, Math.floor(canvas.width * roi.w));
+    const h = Math.max(1, Math.floor(canvas.height * roi.h));
     const data = ctx.getImageData(x, y, w, h).data;
     let g = 0, n = 0;
     for (let i = 0; i < data.length; i += 4) { g += data[i + 1]; n++; }
@@ -208,17 +209,22 @@ class MotionDetector {
    * mean absolute luminance change per sampled pixel (0–255 scale).
    * Resting/still ≈ 0–4, small twitch ≈ 5–9, deliberate head turn ≈ 15+.
    */
-  async measure(ms = 2000) {
+  async measure(ms = 2000, roi) {
     const series = [];
     this.prev = null; // fresh baseline each measurement
     const start = performance.now();
+    const W = 160, H = 120;
+    const rx = roi ? Math.floor(W * roi.x) : 0;
+    const ry = roi ? Math.floor(H * roi.y) : 0;
+    const rw = roi ? Math.max(1, Math.floor(W * roi.w)) : W;
+    const rh = roi ? Math.max(1, Math.floor(H * roi.h)) : H;
     await new Promise((resolve) => {
       const tick = () => {
         const { video, canvas, ctx } = this;
         if (video.videoWidth) {
-          canvas.width = 160; canvas.height = 120;
-          ctx.drawImage(video, 0, 0, 160, 120);
-          const cur = ctx.getImageData(0, 0, 160, 120).data;
+          canvas.width = W; canvas.height = H;
+          ctx.drawImage(video, 0, 0, W, H);
+          const cur = ctx.getImageData(rx, ry, rw, rh).data;
           if (this.prev) {
             let d = 0, n = 0;
             // Sample luminance (R+G+B) every 4th pixel.
@@ -244,8 +250,8 @@ class MotionDetector {
   }
 
   // Back-compat: coarse "is this feed alive at all" check for the full scan.
-  async run(ms = 3000) {
-    const { avg, peak } = await this.measure(ms);
+  async run(ms = 3000, roi) {
+    const { avg, peak } = await this.measure(ms, roi);
     const alive = avg > 1.2 && peak > 4; // some real, fluctuating motion
     return { alive, avg: Math.round(avg * 100) / 100, peak: Math.round(peak * 100) / 100 };
   }
@@ -257,12 +263,12 @@ class MotionDetector {
    * PASS only if the response clearly exceeds the baseline AND crosses an
    *    absolute floor — so a tiny twitch or sensor noise does NOT pass.
    */
-  async challenge({ onBaseline, onPrompt } = {}, baselineMs = 1600, respondMs = 3500) {
+  async challenge({ onBaseline, onPrompt, roi } = {}, baselineMs = 1600, respondMs = 3500) {
     if (onBaseline) onBaseline();
-    const base = await this.measure(baselineMs);
+    const base = await this.measure(baselineMs, roi);
 
     if (onPrompt) onPrompt();
-    const resp = await this.measure(respondMs);
+    const resp = await this.measure(respondMs, roi);
 
     // Require the peak response to be well above resting motion.
     const ABS_FLOOR = 8;          // deliberate movement, not a twitch
