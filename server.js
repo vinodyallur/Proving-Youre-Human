@@ -69,7 +69,7 @@ app.post("/api/verify", (req, res) => {
   const result = {
     verdict,
     confidence: score,
-    isLiveHardware: !s.virtualCameraDetected && !s.virtualMicDetected && !s.noHardwareCamera,
+    isLiveHardware:!s.virtualCameraDetected &&!s.virtualMicDetected &&!s.noHardwareCamera,
     isHuman: score >= 40,
     reasons,
     // A signed attestation an app could forward as proof it checked.
