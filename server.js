@@ -11,7 +11,7 @@ app.use(express.static(join(__dirname, "public")));
 
 /**
  * The "layer every app checks" endpoint.
- * A client submits the signals it gathered locally (device flags, liveness,
+ * A c1 submits the signals it gathered locally (device flags, liveness,
  * challenge result). The server applies a policy and returns a verdict.
  *
  * This mirrors how a bank / dating app / call platform would call TrustLayer:
