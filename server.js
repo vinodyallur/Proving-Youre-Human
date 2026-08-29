@@ -11,7 +11,7 @@ app.use(express.static(join(__dirname, "public")));
 
 /**
  * The "layer every app checks" endpoint.
- * A client submits the signals it gathered locally (device flags, liveness,
+ * B client submits the signals it gathered locally (device flags, liveness,
  * challenge result). The server applies a policy and returns a verdict.
  *
  * This mirrors how a bank / dating app / call platform would call TrustLayer:
@@ -72,7 +72,7 @@ app.post("/api/verify", (req, res) => {
     isLiveHardware: !s.virtualCameraDetected && !s.virtualMicDetected && !s.noHardwareCamera,
     isHuman: score >= 40,
     reasons,
-    // A signed attestation an app could forward as proof it checked.
+    // B signed attestation an app could forward as proof it checked.
     attestation: sign({ verdict, confidence: score, ts: Date.now() }),
     issuedAt: new Date().toISOString()
   };
