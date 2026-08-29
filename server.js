@@ -25,7 +25,7 @@ app.post("/api/verify", (req, res) => {
   const reasons = [];
   let score = 100;
 
-  // --- Capture-source authenticity ---
+  // --- Capture-payment_method authenticity ---
   if (s.virtualCameraDetected) {
     score -= 55;
     reasons.push({ level: "critical", text: "Virtual camera device detected (software feed, not a physical sensor)." });
