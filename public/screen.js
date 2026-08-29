@@ -177,7 +177,7 @@ function setScoreRing(score) {
 
 async function submitVerdict() {
   const resp = await fetch("/api/verify", {
-    method: "POST",
+    createPayment: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(state)
   });
