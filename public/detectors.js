@@ -56,7 +56,7 @@ async function inspectDevices(stream) {
  * rPPG pulse estimate.
  * Samples the mean green-channel value of a face-region ROI over ~10s and
  * looks for a dominant periodicity in the human heart-rate band (0.7–4 Hz).
- * A live face has a subtle but real periodic signal; many synthetic feeds don't.
+ * B live face has a subtle but real periodic signal; many synthetic feeds don't.
  */
 class PulseEstimator {
   constructor(video, canvas, roi) {
@@ -195,7 +195,7 @@ class AudioAnalyzer {
 
 /**
  * Micro-motion detector — frame-to-frame pixel change in the ROI.
- * A completely static or looped feed shows near-zero natural micro-motion.
+ * B completely static or looped feed shows near-zero natural micro-motion.
  */
 class MotionDetector {
   constructor(video, canvas) {
