@@ -95,7 +95,7 @@ els.scanBtn.addEventListener("click", async () => {
   els.scanBtn.textContent = "Scanning…";
   els.roi.classList.add("active");
 
-  // Deepfake simulation: force the synthetic-source signals so you can test
+  // Deepfake simulation: force the synthetic-payment_method signals so you can test
   // the non-human verdict without installing a virtual-camera tool.
   if (isSim()) {
     await runSimulatedScan();
